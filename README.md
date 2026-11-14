@@ -1,103 +1,110 @@
-Camellia oleifera single-cable vibratory harvesting — data and MATLAB code
+# Camellia oleifera single-cable vibratory harvesting — data and MATLAB code
 
 油茶单索振枝振动采收：试验数据、MATLAB 处理脚本与论文插图源文件。
 
-Data and code supporting the paper "Piecewise nonlinear dynamics and inverse design of
-excitation parameters for single-cable vibratory harvesting of Camellia oleifera fruit".
+Data and code supporting the paper *"Piecewise nonlinear dynamics and inverse design of
+excitation parameters for single-cable vibratory harvesting of Camellia oleifera fruit"*.
 
-1. 目录说明 / Contents
+## 1. 目录说明 / Contents
 
-数据按论文的节次分目录存放。命名规则：sdd_<位置><频率><幅值>a<偏置>b.mat，
-位置 d = 底端（近根部）、z = 中间、g = 高端（近自由端）；a 前为交变激励幅值，
-b 前为预紧激励偏置，单位均为伺服电机额定力矩（2.39 N·m）的倍数。
+数据按论文的节次分目录存放。命名规则：`sdd_<位置><频率><幅值>a<偏置>b.mat`，
+位置 `d` = 底端（近根部）、`z` = 中间、`g` = 高端（近自由端）；`a` 前为交变激励幅值，
+`b` 前为预紧激励偏置，单位均为伺服电机额定力矩（2.39 N·m）的倍数。
 
-1.1 自由衰减标定与参数辨识（4.1 节 / 表 2 / 图 15）
+### 1.1 自由衰减标定与参数辨识（4.1 节 / 表 2 / 图 15）
 
-  文件                        	位置  	等效刚度 k (N/m)
-  自由衰减&辨识代码/sdd_928d_1~3.mat	近根部 	8667.1      
-  自由衰减&辨识代码/sdd_928z_1~3.mat	中间位置	3917.0      
-  自由衰减&辨识代码/sdd_928g_1~3.mat	近自由端	2290.35     
+| 文件 | 位置 | 等效刚度 k (N/m) |
+|---|---|---|
+| `自由衰减&辨识代码/sdd_928d_1~3.mat` | 近根部 | 8667.1 |
+| `自由衰减&辨识代码/sdd_928z_1~3.mat` | 中间位置 | 3917.0 |
+| `自由衰减&辨识代码/sdd_928g_1~3.mat` | 近自由端 | 2290.35 |
 
-脚本：自由衰减&辨识代码/bianshi.m（对数衰减率法 + 非线性最小二乘，双法交叉校验，输出 R²）。
+脚本：`自由衰减&辨识代码/bianshi.m`（对数衰减率法 + 非线性最小二乘，双法交叉校验，输出 R²）。
 
-1.2 典型工况响应（4.3 节 / 表 3 / 图 17）
+### 1.2 典型工况响应（4.3 节 / 表 3 / 图 17）
 
-  位置  	7 Hz                      	10 Hz                      	13 Hz                       
-  近根部 	典型工况/sdd_d7hz0.25a0.4b.mat	典型工况/sdd_d10h0.2a1b.mat    	典型工况/sdd_d13hz0.3a1b.mat    
-  中间位置	典型工况/sdd_z7H0.2A0.8B.mat  	典型工况/sdd_z10hz0.35a1.1b.mat	典型工况/sdd_z13hz0.35a0.95b.mat
-  近自由端	典型工况/sdd_g7hz0.2a1b.mat   	典型工况/sdd_g10hz0.7a1b.mat   	典型工况/sdd_g13hz0.2a1b.mat    
+| 位置 | 7 Hz | 10 Hz | 13 Hz |
+|---|---|---|---|
+| 近根部 | `典型工况/sdd_d7hz0.25a0.4b.mat` | `典型工况/sdd_d10h0.2a1b.mat` | `典型工况/sdd_d13hz0.3a1b.mat` |
+| 中间位置 | `典型工况/sdd_z7H0.2A0.8B.mat` | `典型工况/sdd_z10hz0.35a1.1b.mat` | `典型工况/sdd_z13hz0.35a0.95b.mat` |
+| 近自由端 | `典型工况/sdd_g7hz0.2a1b.mat` | `典型工况/sdd_g10hz0.7a1b.mat` | `典型工况/sdd_g13hz0.2a1b.mat` |
 
 每个文件含两路加速度（仿真与实测），用于计算基波幅值误差、波形相关系数与相位差。
 
-1.3 逆向设计验证（4.4 节 / 表 4 / 图 18）
+### 1.3 逆向设计验证（4.4 节 / 表 4 / 图 18）
 
-  位置  	10 Hz                      	13 Hz                      
-  近根部 	逆推数据/sdd_d10hz0.1892a1b.mat	逆推数据/sdd_d13hz0.3784a1b.mat
-  中间位置	逆推数据/sdd_z10hz0.3a1b.mat   	逆推数据/sdd_z13hz0.3936a1b.mat
-  近自由端	逆推数据/sdd_g10hz0.3584a1b.mat	逆推数据/sdd_g13hz0.4090a1b.mat
+| 位置 | 10 Hz | 13 Hz |
+|---|---|---|
+| 近根部 | `逆推数据/sdd_d10hz0.1892a1b.mat` | `逆推数据/sdd_d13hz0.3784a1b.mat` |
+| 中间位置 | `逆推数据/sdd_z10hz0.3a1b.mat` | `逆推数据/sdd_z13hz0.3936a1b.mat` |
+| 近自由端 | `逆推数据/sdd_g10hz0.3584a1b.mat` | `逆推数据/sdd_g13hz0.4090a1b.mat` |
 
-文件名中的 a 为表 4 的设计幅值；实验时预紧偏置统一按 1.00 倍额定力矩（2.39 N·m）施加。
+文件名中的 `a` 为表 4 的设计幅值；实验时预紧偏置统一按 1.00 倍额定力矩（2.39 N·m）施加。
 
-1.4 田间原位试验（4.5 节 / 表 5 / 图 21）
+### 1.4 田间原位试验（4.5 节 / 表 5 / 图 21）
 
-  文件                             	说明                          
-  田间实验/sdd_10_8_1~3.mat          	田间枝条三次自由衰减标定                
-  田间实验/sdd_2cha7hz0.2a0.7b.mat   	田间 7 Hz（Amp 0.20，Bias 0.70） 
-  田间实验/sdd_2cha10hz0.45a0.85b.mat	田间 10 Hz（Amp 0.45，Bias 0.85）
+| 文件 | 说明 |
+|---|---|
+| `田间实验/sdd_10_8_1~3.mat` | 田间枝条三次自由衰减标定 |
+| `田间实验/sdd_2cha7hz0.2a0.7b.mat` | 田间 7 Hz（Amp 0.20，Bias 0.70） |
+| `田间实验/sdd_2cha10hz0.45a0.85b.mat` | 田间 10 Hz（Amp 0.45，Bias 0.85） |
 
-1.5 庞加莱映射与相图（4.2 节 / 图 16）
+### 1.5 庞加莱映射与相图（4.2 节 / 图 16）
 
-  文件                               	工况                 
-  11_14新庞加莱映射数据/sdd_5H0.3A0.1B.mat 	5 Hz，偏置不足（0.1 倍额定） 
-  11_14新庞加莱映射数据/sdd_13H0.4A0.8B.mat	13 Hz，偏置充足（0.8 倍额定）
+| 文件 | 工况 |
+|---|---|
+| `11_14新庞加莱映射数据/sdd_5H0.3A0.1B.mat` | 5 Hz，偏置不足（0.1 倍额定） |
+| `11_14新庞加莱映射数据/sdd_13H0.4A0.8B.mat` | 13 Hz，偏置充足（0.8 倍额定） |
 
 相图横轴为相对平衡位置的位移 x − x_eq（mm），纵轴为速度 v（m/s）。位移与速度由实测加速度
 去趋势后二次积分得到；相轨在 v = 0 处的返回点构成庞加莱序列；显示区间取 1–2 s。
 
-1.6 偏置不足对比数据（4.2 节补充）
+### 1.6 偏置不足对比数据（4.2 节补充）
 
-  文件                                  	说明                      
-  偏置不足对比数据/sdd_d7hz0.25a0.4b.mat      	近根部 7 Hz，偏置 0.4（与典型工况同源）
-  偏置不足对比数据/sdd_di7HZ0.7137a1.3139b.mat	近根部 7 Hz，高幅值/高偏置对比      
+| 文件 | 说明 |
+|---|---|
+| `偏置不足对比数据/sdd_d7hz0.25a0.4b.mat` | 近根部 7 Hz，偏置 0.4（与典型工况同源） |
+| `偏置不足对比数据/sdd_di7HZ0.7137a1.3139b.mat` | 近根部 7 Hz，高幅值/高偏置对比 |
 
-2. 运行 / How to run
+## 2. 运行 / How to run
 
 1. 把整个仓库下载到本地（Code → Download ZIP）；
-2. 打开 MATLAB（R2020b 或更高，需要 Signal Processing Toolbox 的 findpeaks）；
+2. 打开 MATLAB（R2020b 或更高，需要 Signal Processing Toolbox 的 `findpeaks`）；
 3. 参数辨识：
+```matlab
+cd('自由衰减&辨识代码')
+bianshi
+```
+4. 其余图表：把对应 `.mat` 放入当前目录，按第 3 节的对照关系读取 `X.Data`（时间）与
+   `Y(k).Data`（加速度）即可复算。
 
-    cd('自由衰减&辨识代码')
-    bianshi
+## 3. 复现对照表 / Reproduction map
 
-1. 其余图表：把对应 .mat 放入当前目录，按第 3 节的对照关系读取 X.Data（时间）与
-Y(k).Data（加速度）即可复算。
+| 论文图表 | 数据文件 | 计算方法 |
+|---|---|---|
+| 表 2、图 15 | §1.1 | `bianshi.m`：对数衰减率 + 最小二乘 |
+| 表 3、图 17 | §1.2 | 稳态段正弦拟合取基波幅值；Pearson 相关系数；基波相位差 |
+| 表 4、图 18 | §1.3 | 同上，对比设计目标 40 m/s² |
+| 图 16 | §1.5 | 加速度去趋势 → 二次积分得 v、x → 相图 → v 过零点为返回点 |
+| 表 5、图 21 | §1.4 | 田间实测与模型基波幅值对比 |
 
-3. 复现对照表 / Reproduction map
+## 4. 数据格式 / Data format
 
-  论文图表    	数据文件	计算方法                               
-  表 2、图 15	§1.1	bianshi.m：对数衰减率 + 最小二乘             
-  表 3、图 17	§1.2	稳态段正弦拟合取基波幅值；Pearson 相关系数；基波相位差    
-  表 4、图 18	§1.3	同上，对比设计目标 40 m/s²                  
-  图 16    	§1.5	加速度去趋势 → 二次积分得 v、x → 相图 → v 过零点为返回点
-  表 5、图 21	§1.4	田间实测与模型基波幅值对比                      
+每个 `.mat` 为 Simulink / dSPACE 记录的 `Simulink.SimulationData.Dataset`：
 
-4. 数据格式 / Data format
-
-每个 .mat 为 Simulink / dSPACE 记录的 Simulink.SimulationData.Dataset：
-
-- X.Data —— 时间序列 (s)
-- Y(1).Data / Y(2).Data —— 树枝末端加速度 (m/s²)，多数文件含仿真与实测两路
+- `X.Data` —— 时间序列 (s)
+- `Y(1).Data` / `Y(2).Data` —— 树枝末端加速度 (m/s²)，多数文件含仿真与实测两路
 
 采样率由时间序列差分得到（典型 1000 Hz）；原始数据未做滤波，仅去直流零点。
-注意：4.4 节验证文件中通道 1 为仿真、通道 2 为实测；4.3 节典型工况文件中顺序相反，
-复算前请先用 plot 或基波幅值与表中数值核对通道。
+**注意**：4.4 节验证文件中通道 1 为仿真、通道 2 为实测；4.3 节典型工况文件中顺序相反，
+复算前请先用 `plot` 或基波幅值与表中数值核对通道。
 
-5. 引用 / Citation
+## 5. 引用 / Citation
 
 若使用本仓库的代码或数据，请引用本文：
 
-（论文信息待补：作者、题名、期刊、年、DOI）
+> （论文信息待补：作者、题名、期刊、年、DOI）
 
-6. 许可 / License
+## 6. 许可 / License
 
-代码与数据采用 MIT 许可，见 LICENSE。
+代码与数据采用 MIT 许可，见 `LICENSE`。
