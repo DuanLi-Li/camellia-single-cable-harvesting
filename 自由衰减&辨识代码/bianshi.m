@@ -1,156 +1,101 @@
-%% ===================== 二阶线弹簧系统参数辨识（修复版）=====================
-% 模型：m*ddx + b*dx + k*x = 0
-% 说明：全程无滤波，仅去除直流零点；修复峰值识别逻辑，保证两方法结果一致
+%% ===================== 枝条等效参数辨识（非线性最小二乘） =====================
+% 模型：m*ddx + c*dx + k*x = 0
+% 方法：对自由衰减加速度记录做非线性最小二乘拟合，输出等效质量 m、等效阻尼 c、
+%       固有频率 fn、阻尼比 zeta 与拟合优度 R^2。
+% 窗口：以记录中的最高峰为起点，向后取足够长的数据窗（默认 2 s，或至记录末尾）；
+%       峰值仅用于确定窗口与初值，阻尼比初值取 2%，最终参数全部由最小二乘拟合得到。
+% 预处理：仅去除直流零点，不滤波。
+%
+% 用法：修改下面的 dataFile 与 k，运行即可。
+%   近根部   k = 8667.10，文件 sdd_928d_1~3.mat
+%   中间位置 k = 3917.00，文件 sdd_928z_1~3.mat
+%   近自由端 k = 2290.35，文件 sdd_928g_1~3.mat
 clear; clc; close all;
 
-%% ===================== 1. 数据导入与系统参数 =====================
-load('sdd_928g_3.mat'); 
-t_full = sdd_928g_3.X.Data';       % 完整时间数据
-a_full = sdd_928g_3.Y.Data';       % 完整加速度数据(m/s²)
+%% ===================== 1. 数据与已知刚度 =====================
+dataFile   = 'sdd_928g_3.mat';
+k          = 2290.35;      % 该夹持位置的等效弯曲刚度 (N/m)
+win_length = 2.5;          % 拟合窗口长度 (s)，或至记录末尾
 
-% 已知线刚度
-k = 2290.35;  
+S = load(dataFile);
+fn_field = fieldnames(S);
+st = S.(fn_field{1});
+t_all = st.X.Data(:)';
+a_all = st.Y.Data(:)';
 
-fprintf('==================== 系统基础参数 ====================\n');
+fprintf('==================== 输入 ====================\n');
+fprintf('数据文件：%s\n', dataFile);
 fprintf('线刚度 k = %.2f N/m\n', k);
-fprintf('======================================================\n\n');
+fprintf('==============================================\n\n');
 
-%% ===================== 2. 截取自由振动段与预处理（无滤波）=====================
-start_time = 0.097;  
-end_time = 1.8;     % 截取前1.5秒高信噪比数据，舍弃后期噪声段
+%% ===================== 2. 以最高峰为起点截取窗口 =====================
+fs   = 1/(t_all(2)-t_all(1));
+a_dc = a_all - mean(a_all);
 
-start_idx = find(t_full >= start_time, 1, 'first');
-end_idx = find(t_full >= end_time, 1, 'first');
+[pks, locs] = findpeaks(a_dc, 'MinPeakHeight', 0.2*max(a_dc), ...
+                             'MinPeakDistance', round(0.07*fs));
+if numel(pks) < 5
+    error('有效峰值过少，请检查数据或峰值阈值');
+end
+[~, imax] = max(pks);
+t0 = t_all(locs(imax));                 % 最高峰所在时刻 = 窗口起点
+t1 = min(t_all(end), t0 + win_length);  % 向后取足够长的窗口
 
-t = t_full(start_idx:end_idx) - t_full(start_idx);
-a_raw = a_full(start_idx:end_idx);
-n = length(t);
-fs = 1/(t(2)-t(1));
+w  = t_all >= t0 & t_all <= t1;
+t  = t_all(w) - t0;                     % 以最高峰为零时刻
+a  = a_all(w);
+a  = a - mean(a);                       % 再次去直流
+n  = numel(t);
 
-% 仅去直流零点，不做任何滤波
-offset = mean(a_raw(round(n*0.8):end));
-a = a_raw - offset;
-
-fprintf('已截取数据：%.2f ~ %.2f s，共 %d 个采样点\n', start_time, end_time, n);
+fprintf('最高峰时刻 t0 = %.4f s，拟合窗口 %.2f ~ %.2f s（%d 点）\n', t0, t0, t1, n);
 fprintf('采样率 fs = %.1f Hz\n\n', fs);
 
-%% ===================== 方法1：对数衰减率法（修复峰值识别）=====================
-fprintf('==================== 方法1：对数衰减率法 ====================\n');
+%% ===================== 3. 由峰值特征给出初值 =====================
+t_peaks  = t_all(locs);
+Td       = mean(diff(t_peaks));            % 平均峰间距
+A0       = pks(imax);                      % 最高峰幅值
+zeta0    = 0.02;                           % 阻尼比初值（2%）
+omega_n0 = 2*pi/Td/sqrt(1-zeta0^2);        % 无阻尼固有角频率初值
+phi0     = 0;                              % 起点为峰，相位初值取 0
 
-% ---------- 核心修复：限制最小峰间距，过滤噪声毛刺 ----------
-% 预估频率约10Hz，周期0.1s，最小峰间距设为周期的70%，避免一个周期识别多个峰
-min_peak_dist = round(0.07 * fs);  
-% 最小峰值高度设为最大值的20%，过滤后期小噪声峰
-[pks, locs] = findpeaks(a, 'MinPeakHeight', max(a)*0.2, 'MinPeakDistance', min_peak_dist);
-peak_num = length(pks);
-t_peaks = t(locs);
+fprintf('平均峰间距 Td = %.4f s\n', Td);
+fprintf('初值：A0 = %.3f, zeta0 = %.3f, fn0 = %.3f Hz\n\n', A0, zeta0, omega_n0/(2*pi));
 
-if peak_num < 5
-    error('有效峰值过少，请调整截取时间或峰值阈值');
-end
+%% ===================== 4. 非线性最小二乘拟合 =====================
+acc_model = @(p, tt) p(1).*exp(-p(2)*p(3)*tt).*cos(p(3)*sqrt(1-p(2)^2)*tt + p(4));
+params0   = [A0, zeta0, omega_n0, phi0];
 
-% 1. 计算振动周期与频率
-T_list = diff(t_peaks);
-Td_avg = mean(T_list);          % 平均有阻尼周期
-fd = 1 / Td_avg;                 % 有阻尼固有频率
-omega_d = 2 * pi * fd;           % 有阻尼固有角频率
+options = optimset('MaxIter', 30000, 'MaxFunEvals', 100000, ...
+                   'TolX', 1e-12, 'TolFun', 1e-12, 'Display', 'off');
 
-% 2. 计算对数衰减率与阻尼比（取相邻峰值的平均值，更稳健）
-delta_list = log(pks(1:end-1) ./ pks(2:end));
-delta_avg = mean(delta_list);
-zeta1 = delta_avg / sqrt(4*pi^2 + delta_avg^2);
-
-% 3. 无阻尼固有频率
-omega_n1 = omega_d / sqrt(1 - zeta1^2);
-fn1 = omega_n1 / (2*pi);
-
-% 4. 计算等效质量与线阻尼系数
-m1 = k / (omega_n1^2);
-b1 = 2 * zeta1 * sqrt(m1 * k);
-
-fprintf('识别有效峰值数量：%d 个\n', peak_num);
-fprintf('平均振动周期 Td = %.4f s\n', Td_avg);
-fprintf('有阻尼固有频率 fd = %.2f Hz\n', fd);
-fprintf('阻尼比 ζ = %.4f (%.2f%%)\n', zeta1, zeta1*100);
-fprintf('无阻尼固有频率 fn = %.2f Hz\n', fn1);
-fprintf('等效质量 m = %.4f kg\n', m1);
-fprintf('线阻尼系数 b = %.4f N·s/m\n', b1);
-fprintf('==============================================================\n\n');
-
-%% ===================== 方法2：非线性最小二乘法（全局拟合）=====================
-fprintf('==================== 方法2：非线性最小二乘法 ====================\n');
-
-% 欠阻尼加速度解析模型
-acc_model = @(p, t) p(1) .* exp(-p(2)*p(3)*t) .* cos( p(3)*sqrt(1-p(2)^2)*t + p(4) );
-
-% 自动提取初始参数（用修复后的峰值识别逻辑，保证初始值准确）
-A0 = pks(1);
-zeta0 = zeta1;
-omega_n0 = omega_n1;
-phi0 = -omega_d * t_peaks(1);  % 根据第一个峰值位置反推初相位
-params0 = [A0, zeta0, omega_n0, phi0];
-
-% 拟合设置
-options = optimset(...
-    'MaxIter', 30000, ...
-    'MaxFunEvals', 100000, ...
-    'TolX', 1e-12, ...
-    'TolFun', 1e-12, ...
-    'Display', 'off');
-
-% 执行全局最优拟合
 params_fit = fminsearch(@(p) sum((a - acc_model(p, t)).^2), params0, options);
 
-% 提取拟合结果
-A_fit = params_fit(1);
-zeta2 = abs(params_fit(2));
-omega_n2 = params_fit(3);
-phi_fit = params_fit(4);
-omega_d2 = omega_n2 * sqrt(1 - zeta2^2);
-fn2 = omega_n2 / (2*pi);
+A_fit   = params_fit(1);
+zeta    = abs(params_fit(2));
+omega_n = params_fit(3);
 
-% 计算物理参数
-m2 = k / (omega_n2^2);
-b2 = 2 * zeta2 * sqrt(m2 * k);
+m = k / omega_n^2;
+c = 2*zeta*sqrt(m*k);
 
-fprintf('固有频率 fn = %.2f Hz\n', fn2);
-fprintf('阻尼比 ζ = %.4f (%.2f%%)\n', zeta2, zeta2*100);
-fprintf('等效质量 m = %.4f kg\n', m2);
-fprintf('线阻尼系数 b = %.4f N·s/m\n', b2);
-fprintf('==============================================================\n\n');
-
-%% ===================== 双方法结果对比与验证 =====================
-a_fit = acc_model(params_fit, t);
+a_fit  = acc_model(params_fit, t);
 SS_res = sum((a - a_fit).^2);
 SS_tot = sum((a - mean(a)).^2);
-R2 = 1 - SS_res / SS_tot;
+R2     = 1 - SS_res/SS_tot;
 
-fprintf('==================== 结果对比 =====================\n');
-fprintf('拟合优度 R² = %.4f\n', R2);
-fprintf('固有频率相对偏差：%.2f %%\n', abs(fn1 - fn2)/fn1 * 100);
-fprintf('阻尼比相对偏差：%.2f %%\n', abs(zeta1 - zeta2)/zeta1 * 100);
-fprintf('等效质量相对偏差：%.2f %%\n', abs(m1 - m2)/m1 * 100);
-fprintf('线阻尼系数相对偏差：%.2f %%\n', abs(b1 - b2)/b1 * 100);
-fprintf('===================================================\n');
-fprintf('结论：偏差小于10%说明两种方法结果一致，参数可信\n\n');
+fprintf('==================== 辨识结果 ====================\n');
+fprintf('固有频率     fn = %.3f Hz\n', omega_n/(2*pi));
+fprintf('阻尼比      zeta = %.4f (%.2f%%)\n', zeta, 100*zeta);
+fprintf('等效质量       m = %.4f kg\n', m);
+fprintf('等效阻尼       c = %.4f N·s/m\n', c);
+fprintf('拟合优度      R^2 = %.2f%%\n', 100*R2);
+fprintf('==================================================\n');
 
-%% ===================== 绘图验证 =====================
-% 图1：峰值识别结果
+%% ===================== 5. 绘图 =====================
 figure('Color','w','Position',[100,100,900,400]);
-plot(t, a, 'b-','LineWidth',1.2, 'DisplayName','原始加速度（无滤波）');
+plot(t, a, 'b-', 'LineWidth', 1.2, 'DisplayName', '实测加速度');
 hold on;
-plot(t_peaks, pks, 'ro','MarkerFaceColor','r','MarkerSize',6, 'DisplayName','识别有效峰值');
-xlabel('时间 t (s)'); ylabel('加速度 a (m/s^2)');
-title('对数衰减法：峰值识别结果');
-legend('Location','best');
-grid on;
+plot(t, a_fit, 'r--', 'LineWidth', 1.4, 'DisplayName', '最小二乘拟合');
+xlabel('相对最高峰的时间 t (s)'); ylabel('加速度 a (m/s^2)');
+title(sprintf('非线性最小二乘拟合（R^2 = %.2f%%）', 100*R2));
+legend('Location', 'best'); grid on;
 
-% 图2：拟合效果对比
-figure('Color','w','Position',[100,100,900,400]);
-plot(t, a, 'b-','LineWidth',1.2, 'DisplayName','原始加速度（无滤波）');
-hold on;
-plot(t, a_fit, 'r--','LineWidth',1.5, 'DisplayName','最小二乘拟合曲线');
-xlabel('时间 t (s)'); ylabel('加速度 a (m/s^2)');
-title(['非线性最小二乘拟合效果（R² = ',num2str(R2,'%.4f'),'）']);
-legend('Location','best');
-grid on;
