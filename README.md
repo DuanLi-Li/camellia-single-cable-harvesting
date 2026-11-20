@@ -3,15 +3,15 @@
 油茶单索振枝振动采收：试验数据、MATLAB 处理脚本与论文插图源文件。
 
 Data and code supporting the paper *"Piecewise nonlinear dynamics and inverse design of
-excitation parameters for single-cable vibratory harvesting of Camellia oleifera fruit"*.
+excitation parameters for single-cable vibratory harvesting of Camellia oleifera."*
 
 ## 1. 目录说明 / Contents
 
-数据按论文的节次分目录存放。命名规则：`sdd_<位置><频率><幅值>a<偏置>b.mat`，
+数据按论文的节次分目录存放。命名规则：`sdd_<位置><频率>hz<幅值>a<偏置>b.mat`，
 位置 `d` = 底端（近根部）、`z` = 中间、`g` = 高端（近自由端）；`a` 前为交变激励幅值，
 `b` 前为预紧激励偏置，单位均为伺服电机额定力矩（2.39 N·m）的倍数。
 
-### 1.1 自由衰减标定与参数辨识（4.1 节 / 表 2 / 图 15）
+### 1.1 自由衰减标定与参数辨识（4.1 节 / 表 1、表 2 / 图 16）
 
 | 文件 | 位置 | 等效刚度 k (N/m) |
 |---|---|---|
@@ -19,9 +19,13 @@ excitation parameters for single-cable vibratory harvesting of Camellia oleifera
 | `自由衰减&辨识代码/sdd_928z_1~3.mat` | 中间位置 | 3917.0 |
 | `自由衰减&辨识代码/sdd_928g_1~3.mat` | 近自由端 | 2290.35 |
 
-脚本：`自由衰减&辨识代码/bianshi.m`（对数衰减率法 + 非线性最小二乘，双法交叉校验，输出 R²）。
+脚本：`自由衰减&辨识代码/bianshi.m`（非线性最小二乘拟合）。拟合窗口以记录中的**最高峰为起点**，
+向后取 2.5 s（或至记录末尾）；初值由首峰幅值与平均峰间距给出，阻尼比初值取 2%；
+仅去直流、不滤波，输出等效质量、等效阻尼与 R²。
 
-### 1.2 典型工况响应（4.3 节 / 表 3 / 图 17）
+> 注：表 2 的数值为原始拟合结果。用本脚本按默认窗口复算时，等效质量差异小于 0.5%，等效阻尼差异小于 5%（近根部三组相对明显），差异来自拟合窗口与预处理的选择。
+
+### 1.2 典型工况响应（4.3 节 / 表 3 / 图 18）
 
 | 位置 | 7 Hz | 10 Hz | 13 Hz |
 |---|---|---|---|
@@ -29,9 +33,10 @@ excitation parameters for single-cable vibratory harvesting of Camellia oleifera
 | 中间位置 | `典型工况/sdd_z7H0.2A0.8B.mat` | `典型工况/sdd_z10hz0.35a1.1b.mat` | `典型工况/sdd_z13hz0.35a0.95b.mat` |
 | 近自由端 | `典型工况/sdd_g7hz0.2a1b.mat` | `典型工况/sdd_g10hz0.7a1b.mat` | `典型工况/sdd_g13hz0.2a1b.mat` |
 
-每个文件含两路加速度（仿真与实测），用于计算基波幅值误差、波形相关系数与相位差。
+每个文件含两路加速度（通道 1 为仿真、通道 2 为实测），用于计算基波幅值误差、
+波形相关系数与相位差。
 
-### 1.3 逆向设计验证（4.4 节 / 表 4 / 图 18）
+### 1.3 逆向设计验证（4.4 节 / 表 4 / 图 19）
 
 | 位置 | 10 Hz | 13 Hz |
 |---|---|---|
@@ -41,7 +46,7 @@ excitation parameters for single-cable vibratory harvesting of Camellia oleifera
 
 文件名中的 `a` 为表 4 的设计幅值；实验时预紧偏置统一按 1.00 倍额定力矩（2.39 N·m）施加。
 
-### 1.4 田间原位试验（4.5 节 / 表 5 / 图 21）
+### 1.4 田间原位试验（4.5 节 / 表 5 / 图 21、图 22）
 
 | 文件 | 说明 |
 |---|---|
@@ -49,7 +54,7 @@ excitation parameters for single-cable vibratory harvesting of Camellia oleifera
 | `田间实验/sdd_2cha7hz0.2a0.7b.mat` | 田间 7 Hz（Amp 0.20，Bias 0.70） |
 | `田间实验/sdd_2cha10hz0.45a0.85b.mat` | 田间 10 Hz（Amp 0.45，Bias 0.85） |
 
-### 1.5 庞加莱映射与相图（4.2 节 / 图 16）
+### 1.5 庞加莱映射与相图（4.2 节 / 图 17）
 
 | 文件 | 工况 |
 |---|---|
@@ -57,7 +62,8 @@ excitation parameters for single-cable vibratory harvesting of Camellia oleifera
 | `11_14新庞加莱映射数据/sdd_13H0.4A0.8B.mat` | 13 Hz，偏置充足（0.8 倍额定） |
 
 相图横轴为相对平衡位置的位移 x − x_eq（mm），纵轴为速度 v（m/s）。位移与速度由实测加速度
-去趋势后二次积分得到；相轨在 v = 0 处的返回点构成庞加莱序列；显示区间取 1–2 s。
+去趋势后二次积分得到。庞加莱截面取半截面 `v = 0 且 x − x_eq > 0`，每周期得到一个返回点；
+显示区间取 1–2 s。
 
 ### 1.6 偏置不足对比数据（4.2 节补充）
 
@@ -65,7 +71,8 @@ excitation parameters for single-cable vibratory harvesting of Camellia oleifera
 |---|---|
 | `偏置不足对比数据/sdd_d7hz0.25a0.4b.mat` | 近根部 7 Hz，偏置 0.4（与典型工况同源） |
 | `偏置不足对比数据/sdd_di7HZ0.7137a1.3139b.mat` | 近根部 7 Hz，高幅值/高偏置对比 |
-### 1.7 模态缩聚验证的 9 组自由衰减（图 15 / 表 2 补充）
+
+### 1.7 模态缩聚验证的 9 组自由衰减（图 16 / 表 2 补充）
 
 | 文件 | 说明 |
 |---|---|
@@ -92,22 +99,21 @@ bianshi
 
 | 论文图表 | 数据文件 | 计算方法 |
 |---|---|---|
-| 表 2、图 15 | §1.1 | `bianshi.m`：对数衰减率 + 最小二乘 |
-| 表 3、图 17 | §1.2 | 稳态段正弦拟合取基波幅值；Pearson 相关系数；基波相位差 |
-| 表 4、图 18 | §1.3 | 同上，对比设计目标 40 m/s² |
-| 图 16 | §1.5 | 加速度去趋势 → 二次积分得 v、x → 相图 → v 过零点为返回点 |
-| 表 5、图 21 | §1.4 | 田间实测与模型基波幅值对比 |
+| 表 1、表 2、图 16 | §1.1 | `bianshi.m`：非线性最小二乘拟合（初值由峰值特征给出） |
+| 表 3、图 18 | §1.2 | 稳态段正弦拟合取基波幅值；Pearson 相关系数；基波相位差 |
+| 表 4、图 19 | §1.3 | 同上，对比设计目标 40 m/s² |
+| 图 17 | §1.5 | 加速度去趋势 → 二次积分得 v、x → 相图 → 半截面 `v = 0, x − x_eq > 0` 的穿越点为返回点 |
+| 表 5、图 21、图 22 | §1.4 | 田间实测与模型基波幅值对比 |
 
 ## 4. 数据格式 / Data format
 
 每个 `.mat` 为 Simulink / dSPACE 记录的 `Simulink.SimulationData.Dataset`：
 
 - `X.Data` —— 时间序列 (s)
-- `Y(1).Data` / `Y(2).Data` —— 树枝末端加速度 (m/s²)，多数文件含仿真与实测两路
+- `Y(1).Data` / `Y(2).Data` —— 树枝末端加速度 (m/s²)
 
+**所有文件的通道顺序一致：通道 1 为仿真、通道 2 为实测**，可用基波幅值与论文表中的数值核对。
 采样率由时间序列差分得到（典型 1000 Hz）；原始数据未做滤波，仅去直流零点。
-**注意**：4.4 节验证文件中通道 1 为仿真、通道 2 为实测；4.3 节典型工况文件中顺序相反，
-复算前请先用 `plot` 或基波幅值与表中数值核对通道。
 
 ## 5. 引用 / Citation
 
@@ -118,3 +124,5 @@ bianshi
 ## 6. 许可 / License
 
 代码与数据采用 MIT 许可，见 `LICENSE`。
+
+
